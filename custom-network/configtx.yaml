@@ -1,0 +1,146 @@
+Organizations:
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: organizations/ordererOrganizations/example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.example.com:7050
+
+  - &JIO
+    Name: JIOMSP
+    ID: JIOMSP
+    MSPDir: organizations/peerOrganizations/jio.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('JIOMSP.admin', 'JIOMSP.peer', 'JIOMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('JIOMSP.admin', 'JIOMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('JIOMSP.admin')"
+    AnchorPeers:
+      - Host: peer0.jio.example.com
+        Port: 7051
+
+  - &Airtel
+    Name: AirtelMSP
+    ID: AirtelMSP
+    MSPDir: organizations/peerOrganizations/airtel.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('AirtelMSP.admin', 'AirtelMSP.peer', 'AirtelMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('AirtelMSP.admin', 'AirtelMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('AirtelMSP.admin')"
+    AnchorPeers:
+      - Host: peer0.airtel.example.com
+        Port: 9051
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_0: true
+
+Application: &ApplicationDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities: *ApplicationCapabilities
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities: *ChannelCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.example.com:7050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.example.com
+        Port: 7050
+        ClientTLSCert: organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+        ServerTLSCert: organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+  Organizations: []
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities: *OrdererCapabilities
+
+Profiles:
+  ThreeOrgsOrdererGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Consortiums:
+      SampleConsortium:
+        Organizations:
+          - *JIO
+          - *Airtel
+
+  ThreeOrgsChannel:
+    <<: *ChannelDefaults
+    Consortium: SampleConsortium
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *JIO
+        - *Airtel
